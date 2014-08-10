@@ -37,23 +37,38 @@ function onData(path, callback)
 }
 
 module.exports = function (option) {
+	var list=[];
 	return {
 		implant: function () {
 			return es.through(function (file) {
 				var self =this;
-				onData("",function(data){
+				onData(option.baseDataPath,function(data){
 					onString(file, function (str) {
 						str = str.replace(/\.codeTrack\((.*)\)[\s;]*\/\/+([^\r\n]+)/g,function(s,param,comment){
 							var params=/^\s*['"]([^'"]+)['"](?:\s*,['"]([^'"]*)['"])?/.exec(param),
-								list=[],
-								pvLev
+								map={},
+								num= 0,
+								value,
+								pvLev = 0;
+							list.push([{
+								name:params[1],
+								datum:params[2],
+								comment:comment
+							}]);
 							for(var key in data){
-								if(key==param[1] || key.indexOf(param[1]+"_")===0){
-									list.push(data[key]);
+								if(key==params[1]){
+									pvLev = map._ = Math.round(Math.log(data[key].totalNum)/Math.log(2));
+									num++;
+								}
+								if(key.indexOf(params[1]+"_")===0){
+									pvLev = map[key]=Math.round(Math.log(data[key].totalNum)/Math.log(2));
+									num++;
 								}
 							}
-							if(list.length===0){pvLev=0;}
-							else if(list.length==1){pvLev=Math.round(Math.log(data[list[0]].totalNum)/Math.log(2));}
+							if(num>1)
+							{
+								pvLev=JSON.stringify(map);
+							}
 							return ".codeTrack("+pvLev+","+param+")";
 						});
 						str = str.replace(/__codeTrack/g,function(){
@@ -138,6 +153,8 @@ module.exports = function (option) {
 						self.emit('data', file)
 					})
 				});
+			},function(){
+				fs.writeFileSync(option.samplingInfoPath, JSON.stringify(list))
 			})
 		},
 		sync: function(){

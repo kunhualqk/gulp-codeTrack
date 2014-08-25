@@ -49,7 +49,7 @@ module.exports = function (option) {
 					var groupData={};
 					for(var key in data){
 						if(!data[key] || !data[key].totalNum){continue;}
-						var group=key.split("|",2)[1];
+						var group=key.substring(key.indexOf("|")+1);
 						(groupData[group]||(groupData[group]={totalNum:0})).totalNum+=data[key].totalNum;
 					}
 					//计算最大的采样
@@ -77,7 +77,7 @@ module.exports = function (option) {
 									num++;
 								}
 								if(key.indexOf(params[1]+"|")===0){
-									pvLev = map[key]=Math.round(Math.log(groupData[key].totalNum)/Math.log(2));
+									pvLev = map[key.substring(params[1].length+1)]=Math.round(Math.log(groupData[key].totalNum)/Math.log(2));
 									num++;
 								}
 							}
@@ -188,7 +188,7 @@ module.exports = function (option) {
 					})
 				});
 			},function(){
-				console.log(list.length);
+				console.log("found track place:"+list.length);
 				fs.writeFileSync(path.join(option.workPath,"samplingInfo.json"), JSON.stringify(list,null,4))
 			})
 		},

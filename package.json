@@ -1,6 +1,6 @@
 {
   "name": "gulp-codetrack",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "codeTrack gulp plugin",
   "keywords": [
     "gulpplugin",
@@ -24,6 +24,6 @@
     "url": "git://github.com/kunhualqk/gulp-codeTrack.git"
   },
   "dependencies": {
-	  "event-stream": "~3.0.18"
+	  "through2": "~0.6.1"
   }
 }

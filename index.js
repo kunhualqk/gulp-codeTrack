@@ -1,5 +1,5 @@
 /*jslint node: true */
-var es = require('event-stream');
+var through2 = require('through2');
 var fs = require('fs');
 var path = require('path');
 var http = require('http');
@@ -42,9 +42,8 @@ module.exports = function (option) {
 	var list=[];
 	return {
 		implant: function () {
-			return es.through(function (file) {
+			return through2.obj(function (file, encoding, callback) {
 				var self =this;
-				this.pause();
 				onData(path.join(option.workPath,"baseData.json"),function(data){
 					//合并多个version的数据
 					var groupData={};
@@ -184,8 +183,8 @@ module.exports = function (option) {
 							}) + ")()";
 						})
 						file.contents = new Buffer(str);
-						self.emit('data', file);
-						self.resume();
+						self.push(file);
+						callback();
 					})
 				});
 			},function(){
@@ -210,7 +209,6 @@ module.exports = function (option) {
 					{
 						var item=data[key];
 						if(!item || typeof item!="object" || !item.totalNum){continue;}
-						delete data[key];
 						var time = item.time;
 						delete item.time;
 						for(var key1 in time)

@@ -164,7 +164,7 @@ module.exports = function (option) {
 										"line=" + sampling,
 										"scrolltop=" + ((document.documentElement && document.documentElement.scrollTop) || (document.body && document.body.scrollTop) || 0),
 										"screen=" + screen.width + "x" + screen.height,
-										"t=" + now
+										"t=" + t
 									].join("&");
 									img = null;
 								}

@@ -2,6 +2,7 @@
 var es = require('event-stream');
 var fs = require('fs');
 var path = require('path');
+var http = require('http');
 
 function onString(file, callback) {
 	if (file.isBuffer()) {
@@ -192,8 +193,37 @@ module.exports = function (option) {
 				fs.writeFileSync(path.join(option.workPath,"samplingInfo.json"), JSON.stringify(list,null,4))
 			})
 		},
-		sync: function(){
-			;
+		updateData: function(){
+			var result=/(\d{4})(\d{2})(\d{2})/.exec(process.argv[3]);
+			if(!result){return;}
+			var st=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)).valueOf()/1000,
+				et=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)+1).valueOf()/1000;
+			var url = option.dataUri;
+			http.get(option.reportUri+"url="+encodeURIComponent(url)+"&st="+st+"&et="+et+"",function(res){
+				var buffers = []
+				res.on('data', function (chunk) {
+					buffers.push(chunk);
+				});
+				res.on('end', function () {
+					var data = JSON.parse(Buffer.concat(buffers).toString("utf8")),timeInfo={};
+					for(var key in data)
+					{
+						var item=data[key];
+						if(!item || typeof item!="object" || !item.totalNum){continue;}
+						delete data[key];
+						var time = item.time;
+						delete item.time;
+						for(var key1 in time)
+						{
+							if(!timeInfo[key1]){timeInfo[key1]={totalNum:0,hitsNum:0};}
+							timeInfo[key1].totalNum+=time[key1].totalNum;
+							timeInfo[key1].hitsNum+=time[key1].hitsNum;
+						}
+					}
+					data.time=timeInfo;
+					fs.writeFileSync(path.join(option.workPath,"baseData.json"), JSON.stringify(data,null,4))
+				});
+			});
 		}
 	};
 }

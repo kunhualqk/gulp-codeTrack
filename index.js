@@ -118,7 +118,7 @@ module.exports = function (option) {
 
 									switch(config.autoGroup){
 										case "time":
-											config.group=config.autoGroup+"_"+Math.floor(Math.log(t)/Math.log(2));
+											config.group=config.autoGroup+"_"+(t<=0?0:Math.floor(Math.log(t)/Math.log(2)));
 											break;
 									}
 									if (config.group) {//采样分组

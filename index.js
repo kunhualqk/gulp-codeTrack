@@ -113,7 +113,7 @@ module.exports = function (option) {
 										t = startTime ? (now - startTime) : 0;
 									}
 									else {
-										t = now - trackMap[datumName || firstName] || trackMap[firstName];
+										t = now - (trackMap[datumName || firstName] || trackMap[firstName]);
 									}
 
 									switch(config.autoGroup){

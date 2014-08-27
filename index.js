@@ -94,7 +94,7 @@ module.exports = function (option) {
 									config = config||{};
 									if(config.reject)
 									{
-										if(typeof(config.reject!="object")){config.reject=[config.reject];}
+										if(typeof(config.reject)!="object"){config.reject=[config.reject];}
 										for(var i=config.reject.length-1;i>=0;i--)
 										{
 											if(trackMap[config.reject[i]]){return;}//实现互斥功能
@@ -194,7 +194,9 @@ module.exports = function (option) {
 		},
 		updateData: function(){
 			var result=/(\d{4})(\d{2})(\d{2})/.exec(process.argv[3]);
-			if(!result){return;}
+			if(!result){
+                return;
+            }
 			var st=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)).valueOf()/1000,
 				et=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)+1).valueOf()/1000;
 			var url = option.dataUri;

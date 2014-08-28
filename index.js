@@ -59,7 +59,7 @@ module.exports = function (option) {
 					}
 					onString(file, function (str) {
 						str = str.replace(/\.codeTrack\((.*)\)(?:[\s;]*\/\/+([^\r\n]+))?/g,function(s,param,comment){
-							var params=/^\s*['"]([^'"]+)['"](?:\s*,['"]([^'"]*)['"])?/.exec(param),
+							var params=/^\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]*)['"])?/.exec(param),
 								map={},
 								num= 0,
 								value,

@@ -37,7 +37,16 @@ function onData(path, callback)
 		}
 	})
 }
-
+/**
+ * @param {Object} option 选项
+ * @param {String} option.workPath 工作路径
+ * @param {String} option.dataUri 统计数据的数据服务分类URL，例如：http://myhosts/track/'
+ * @param {String} option.reportUri 获取统计数据的服务器URL
+ * @param {String} option.version 版本号
+ * @param {Number} [option.sampleNumDaily=8192] 每天每个样本期望收到的采样数
+ * @param {Number} [option.maxSamplingRatio=1/16] 最大采样比例，可以避免向服务器发送过多数据
+ * @param {Number} [option.defaultSamplingRatio=1/128] 默认采样比例（在没有数据来计算采样比例时使用，例如新增样本）
+ */
 module.exports = function (option) {
 	var list=[];
 	return {

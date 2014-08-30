@@ -52,18 +52,13 @@ module.exports = function (option) {
 						var group=key.substring(key.indexOf("|")+1);
 						(groupData[group]||(groupData[group]={totalNum:0})).totalNum+=data[key].totalNum;
 					}
-					//计算最大的采样
-					var maxNum=0;
-					for(var key in groupData){
-						maxNum=Math.max(groupData[key].totalNum,maxNum);
-					}
 					onString(file, function (str) {
 						str = str.replace(/\.codeTrack\((.*)\)(?:[\s;]*\/\/+([^\r\n]+))?/g,function(s,param,comment){
 							var params=/^\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]*)['"])?/.exec(param),
 								map={},
 								num= 0,
 								value,
-								pvLev = maxNum?Math.max(Math.round(Math.log(maxNum)/Math.log(2)),0):20;
+								pvLev = Math.round(Math.log((option.sampleNumDaily||8192)/(option.defaultSamplingRatio||(1/128)))/Math.log(2));
 							if(!params){console.log(["track format error:",param]);}
 							list.push({
 								name:params[1],

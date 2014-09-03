@@ -257,6 +257,71 @@ module.exports = function (option) {
 				fs.writeFileSync(path.join(option.workPath,"samplingInfo.json"), JSON.stringify(list,null,4))
 			})
 		},
+		onRemoteData: function(params,callback)
+		{
+			http.get(option.reportUri + "url=" + encodeURIComponent(option.dataUri) + "&st=" + params.st + "&et=" + params.et + "", function (res) {
+				var buffers = []
+				res.on('data', function (chunk) {
+					buffers.push(chunk);
+				});
+				res.on('end', function () {
+					callback(JSON.parse(Buffer.concat(buffers).toString("utf8")));
+				});
+			});
+		},
+		onBufferData: function(params,callback)
+		{
+			var self = this,
+				count = 0,
+				totalData ={minTime:0,maxTime:0};
+			function onData(param,callback)
+			{
+				setTimeout(function () {
+					if (!self["_buffer_" + param.st] || !self._maxTime || param.et > self._maxTime+1) {
+						self["_buffer_" + param.st] = createLoader(function (callback) {
+							self.onRemoteData(param, callback);
+						});
+					}
+					self["_buffer_" + param.st](callback);
+				}, 0);
+			}
+			//对数据分段请求
+			for(var st=Math.floor(params.st/14400)*14400;st<params.et;st+=14400){
+				count++;
+				onData({st: st, et: st + 14400}, function (data) {
+					//合并数据
+					for(var key in data)
+					{
+						if(!data[key].totalNum || !data[key].time){continue;}
+						for (var t in data[key].time) {
+							if(t*600>=params.et || (t*1+1)*600<=params.st){continue;}
+							var totalItem = totalData[key] || (totalData[key] = {totalNum: 0, hitsNum: 0, totalDelay: 0, totalHitsDelay: 0, time: {}});
+							var minTime = Math.min(Math.max(t*600,data.minTime),data.maxTime+1);
+							var maxTime = Math.min(Math.max((t*1+1)*600-1,data.minTime),data.maxTime+1);
+							totalData.maxTime = totalData.maxTime?Math.max(totalData.maxTime, maxTime):maxTime;
+							totalData.minTime = totalData.minTime?Math.min(totalData.minTime, minTime):minTime;
+							self._maxTime = self._maxTime?Math.max(self._maxTime, maxTime):maxTime;
+
+							var timeItem = data[key].time[t];
+							totalItem.totalNum += timeItem.totalNum;
+							totalItem.hitsNum += timeItem.hitsNum;
+							totalItem.totalDelay += timeItem.totalDelay;
+							totalItem.totalHitsDelay += timeItem.totalHitsDelay;
+							totalItem.exampleURL = data[key].time[t].exampleURL;
+							var totalTimeItem = totalItem.time[t] || (totalItem.time[t] = {totalNum: 0, hitsNum: 0, totalDelay: 0, totalHitsDelay: 0})
+							totalTimeItem.totalNum += timeItem.totalNum;
+							totalTimeItem.hitsNum += timeItem.hitsNum;
+							totalTimeItem.totalDelay += timeItem.totalDelay;
+							totalTimeItem.totalHitsDelay += timeItem.totalHitsDelay;
+							totalTimeItem.exampleURL = timeItem.exampleURL;
+						}
+					}
+					if ((--count) === 0) {
+						callback(totalData);
+					}
+				});
+			}
+		},
 		updateData: function(){
 			var result=/(\d{4})(\d{2})(\d{2})/.exec(process.argv[3]);
 			if(!result){
@@ -264,30 +329,52 @@ module.exports = function (option) {
             }
 			var st=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)).valueOf()/1000,
 				et=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)+1).valueOf()/1000;
-			var url = option.dataUri;
-			http.get(option.reportUri+"url="+encodeURIComponent(url)+"&st="+st+"&et="+et+"",function(res){
-				var buffers = []
-				res.on('data', function (chunk) {
-					buffers.push(chunk);
-				});
-				res.on('end', function () {
-					var data = JSON.parse(Buffer.concat(buffers).toString("utf8")),timeInfo={};
-					for(var key in data)
-					{
-						var item=data[key];
-						if(!item || typeof item!="object" || !item.totalNum){continue;}
-						var time = item.time;
-						delete item.time;
-						for(var key1 in time)
-						{
-							if(!timeInfo[key1]){timeInfo[key1]={totalNum:0,hitsNum:0};}
-							timeInfo[key1].totalNum+=time[key1].totalNum;
-							timeInfo[key1].hitsNum+=time[key1].hitsNum;
-						}
+			this.onRemoteData({st:st,et:et},function(data){
+				for (var key in data) {
+					var item = data[key];
+					if (!item || typeof item != "object" || !item.totalNum) {
+						continue;
 					}
-					data.time=timeInfo;
-					fs.writeFileSync(path.join(option.workPath,"baseData.json"), JSON.stringify(data,null,4))
-				});
+					var time = item.time, timeInfo = {};
+					delete item.time;
+					for (var key1 in time) {
+						if (!timeInfo[key1]) {
+							timeInfo[key1] = {totalNum: 0, hitsNum: 0};
+						}
+						timeInfo[key1].totalNum += time[key1].totalNum;
+						timeInfo[key1].hitsNum += time[key1].hitsNum;
+					}
+				}
+				data.time = timeInfo;
+				fs.writeFileSync(path.join(option.workPath, "baseData.json"), JSON.stringify(data, null, 4))
+			});
+		},
+		monitor: function(){
+			var self=this;
+			fs.readFile(path.join(option.workPath,"samplingInfo.json"),function(err,samplingInfoStr){
+				if (err) throw err;
+				var samplingInfo = JSON.parse(samplingInfoStr);
+				function run(){
+					var now=Math.ceil(new Date()/1000);
+					//请求24小时内的数据
+					self.onBufferData({st:Math.ceil(now/600)*600-86400,et:Math.ceil(now/600)*600},function(data){
+						//if(data.maxTime && (data.maxTime%600)/600<0.85)
+						{//如果最后十分钟的数据不全，则进行计算补全
+							for(var key in data){
+								var time=data[key] && data[key].time;
+								if(!time){continue;}
+								var lastItem = time[Math.floor(data.maxTime/600)];
+								//if(lastItem)
+								//{
+								//	var newHitsNum=lastItem.hitsNum * 600/
+								//	lastItem.hitsNum
+								//}
+							}
+						}
+					});
+				}
+				run();
+				setInterval(run,Math.pow(2,17));
 			});
 		}
 	};

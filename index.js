@@ -254,7 +254,11 @@ module.exports = function (option) {
 				});
 			},function(){
 				console.log("found track place:"+list.length);
-				fs.writeFileSync(path.join(option.workPath,"samplingInfo.json"), JSON.stringify(list,null,4))
+				fs.writeFileSync(path.join(option.workPath,"samplingInfo.json"), JSON.stringify(list,null,4));
+				fs.writeFileSync(path.join(option.workPath,"report.html"), fs.readFileSync(path.join(__dirname, 'report.html'),{encoding:"utf8"}).replace("__TrackOption",JSON.stringify({
+					dataUri:option.dataUri,
+					reportUri:option.reportUri
+				})));
 			})
 		},
 		onRemoteData: function(params,callback)
@@ -322,14 +326,8 @@ module.exports = function (option) {
 				});
 			}
 		},
-		updateData: function(){
-			var result=/(\d{4})(\d{2})(\d{2})/.exec(process.argv[3]);
-			if(!result){
-                return;
-            }
-			var st=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)).valueOf()/1000,
-				et=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)+1).valueOf()/1000;
-			this.onRemoteData({st:st,et:et},function(data){
+		updateData: function(params){
+			this.onRemoteData(params,function(data){
 				for (var key in data) {
 					var item = data[key];
 					if (!item || typeof item != "object" || !item.totalNum) {
@@ -376,6 +374,25 @@ module.exports = function (option) {
 				run();
 				setInterval(run,Math.pow(2,17));
 			});
+		},
+		command:function(argu){
+			switch(argu[0].replace(/^-+/,''))
+			{
+				case "updatedata":
+					var result=/(\d{4})(\d{2})(\d{2})/.exec(argu[1]);
+					if(!result){
+		                return;
+		            }
+					var st=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)).valueOf()/1000,
+						et=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)+1).valueOf()/1000;
+					this.updateData({st:st,et:et});
+					break;
+				case "monitor":
+					this.monitor();
+					break;
+				default:
+					console.log("unknown commend:"+argu[0]);
+			}
 		}
 	};
 }

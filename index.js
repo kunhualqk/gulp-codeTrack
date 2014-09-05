@@ -328,12 +328,13 @@ module.exports = function (option) {
 		},
 		updateData: function(params){
 			this.onRemoteData(params,function(data){
+				var timeInfo = {};
 				for (var key in data) {
 					var item = data[key];
 					if (!item || typeof item != "object" || !item.totalNum) {
 						continue;
 					}
-					var time = item.time, timeInfo = {};
+					var time = item.time;
 					delete item.time;
 					for (var key1 in time) {
 						if (!timeInfo[key1]) {
@@ -351,24 +352,123 @@ module.exports = function (option) {
 			var self=this;
 			fs.readFile(path.join(option.workPath,"samplingInfo.json"),function(err,samplingInfoStr){
 				if (err) throw err;
-				var samplingInfo = JSON.parse(samplingInfoStr);
+				var samplingInfo = JSON.parse(samplingInfoStr),datumMap={};
+				for(var i=samplingInfo.length-1;i>=0;i--)
+				{
+					var sampling = samplingInfo[i];
+					if(sampling.datum){datumMap[sampling.name] = sampling.datum;}
+				}
 				function run(){
 					var now=Math.ceil(new Date()/1000);
 					//请求24小时内的数据
 					self.onBufferData({st:Math.ceil(now/600)*600-86400,et:Math.ceil(now/600)*600},function(data){
-						//if(data.maxTime && (data.maxTime%600)/600<0.85)
-						{//如果最后十分钟的数据不全，则进行计算补全
+						self.onBufferData({st:Math.ceil(now/600)*600-86400*2,et:Math.ceil(now/600)*600-86400},function(historyData){
+							//提取采样数据
+							var items={};
 							for(var key in data){
+								if(!data[key] || !data[key].totalNum){continue;}
+								var name = key.substring(key.indexOf("|")+1);
+								var item = items[name] || (items[name]={
+									current:{totalNum:0,hitsNum:0},
+									pre10Minutes:{totalNum:0,hitsNum:0},
+									pre24Hours:{totalNum:0,hitsNum:0},
+									currentHistory:{totalNum:0,hitsNum:0},
+									pre10MinutesHistory:{totalNum:0,hitsNum:0},
+									pre24HoursHistory:{totalNum:0,hitsNum:0}
+								});
+								item.pre24Hours.totalNum+=data[key].totalNum;
+								item.pre24Hours.hitsNum+=data[key].hitsNum;
 								var time=data[key] && data[key].time;
-								if(!time){continue;}
-								var lastItem = time[Math.floor(data.maxTime/600)];
-								//if(lastItem)
-								//{
-								//	var newHitsNum=lastItem.hitsNum * 600/
-								//	lastItem.hitsNum
-								//}
+								if(time && time[Math.floor(data.maxTime/600)])
+								{//当前数据
+									item.current.totalNum+=time[Math.floor(data.maxTime/600)].totalNum;
+									item.current.hitsNum+=time[Math.floor(data.maxTime/600)].hitsNum;
+								}
+								if(time && time[Math.floor(data.maxTime/600)-1])
+								{//前十分钟数据
+									item.pre10Minutes.totalNum+=time[Math.floor(data.maxTime/600)-1].totalNum;
+									item.pre10Minutes.hitsNum+=time[Math.floor(data.maxTime/600)-1].hitsNum;
+								}
 							}
-						}
+							for(var key in historyData){
+								if(!historyData[key] || !historyData[key].totalNum){continue;}
+								var name = key.substring(key.indexOf("|")+1);
+								var item = items[name] || (items[name]={
+									current:{totalNum:0,hitsNum:0},
+									pre10Minutes:{totalNum:0,hitsNum:0},
+									pre24Hours:{totalNum:0,hitsNum:0},
+									currentHistory:{totalNum:0,hitsNum:0},
+									pre10MinutesHistory:{totalNum:0,hitsNum:0},
+									pre24HoursHistory:{totalNum:0,hitsNum:0}
+								});
+								item.pre24HoursHistory.totalNum+=historyData[key].totalNum;
+								item.pre24HoursHistory.hitsNum+=historyData[key].hitsNum;
+								var time=historyData[key] && historyData[key].time;
+								if(time && time[Math.floor(data.maxTime/600)-144])
+								{//当前数据
+									item.currentHistory.totalNum+=time[Math.floor(data.maxTime/600)-144].totalNum;
+									item.currentHistory.hitsNum+=time[Math.floor(data.maxTime/600)-144].hitsNum;
+								}
+								if(time && time[Math.floor(data.maxTime/600)-144-1])
+								{//前十分钟数据
+									item.pre10MinutesHistory.totalNum+=time[Math.floor(data.maxTime/600)-144-1].totalNum;
+									item.pre10MinutesHistory.hitsNum+=time[Math.floor(data.maxTime/600)-144-1].hitsNum;
+								}
+							}
+							//计算不稳定性
+							for(var key in items)
+							{
+								var instability = [],name=key,totalInstability=0;
+								//计算和基准点之间的不稳定性
+								if(key.indexOf("|")>0)
+								{
+									name = name.substring(0,name.indexOf("|"));
+								}
+								if(datumMap[key] && items[datumMap[key]] && items[datumMap[key]].pre24Hours.totalNum && items[key].pre24Hours.totalNum)
+								{//计算当前不足十分钟内数据和基准对比的不稳定性
+									var totalNumExpect = items[datumMap[key]].current.totalNum*items[key].pre24Hours.totalNum/items[datumMap[key]].pre24Hours.totalNum*(data.maxTime%600)/600;
+									var hitsNumExpect = totalNumExpect/(items[key].current.totalNum?items[key].current.totalNum/items[key].current.hitsNum:items[key].pre24Hours.totalNum/items[key].pre24Hours.hitsNum);
+									if(Math.round(hitsNumExpect)!=items[key].current.hitsNum)
+									{
+										instability.push({desc:'当前数据和基准的偏差',value:Math.abs(hitsNumExpect-items[key].current.hitsNum)/(hitsNumExpect+items[key].current.hitsNum)*Math.atan(hitsNumExpect+items[key].current.hitsNum)});
+										totalInstability+=instability[instability.length-1].value;
+									}
+								}
+								if(datumMap[key] && items[datumMap[key]] && items[datumMap[key]].pre24Hours.totalNum && items[key].pre24Hours.totalNum)
+								{//计算上十分钟内数据和基准对比的不稳定性
+									var totalNumExpect = items[datumMap[key]].pre10Minutes.totalNum*items[key].pre24Hours.totalNum/items[datumMap[key]].pre24Hours.totalNum;
+									var hitsNumExpect = totalNumExpect/(items[key].pre10Minutes.totalNum?items[key].pre10Minutes.totalNum/items[key].pre10Minutes.hitsNum:items[key].pre24Hours.totalNum/items[key].pre24Hours.hitsNum);
+									if(Math.round(hitsNumExpect)!=items[key].pre10Minutes.hitsNum)
+									{
+										instability.push({desc:'前十分钟数据和基准的偏差',value:Math.abs(hitsNumExpect-items[key].pre10Minutes.hitsNum)/(hitsNumExpect+items[key].pre10Minutes.hitsNum)*Math.atan(hitsNumExpect+items[key].pre10Minutes.hitsNum)});
+										totalInstability+=instability[instability.length-1].value;
+									}
+								}
+								if(datumMap[key] && items[datumMap[key]] && items[key].pre24HoursHistory.totalNum && items[key].pre24Hours.totalNum)
+								{//计算当前不足十分钟内数据和基准对比的不稳定性
+									var totalNumExpect = items[key].currentHistory.totalNum*items[key].pre24Hours.totalNum/items[key].pre24HoursHistory.totalNum*(data.maxTime%600)/600;
+									var hitsNumExpect = totalNumExpect/(items[key].current.totalNum?items[key].current.totalNum/items[key].current.hitsNum:items[key].pre24Hours.totalNum/items[key].pre24Hours.hitsNum);
+									if(Math.round(hitsNumExpect)!=items[key].current.hitsNum)
+									{
+										instability.push({desc:'当前数据和历史的偏差',value:Math.abs(hitsNumExpect-items[key].current.hitsNum)/(hitsNumExpect+items[key].current.hitsNum)*Math.atan(hitsNumExpect+items[key].current.hitsNum)});
+										totalInstability+=instability[instability.length-1].value;
+									}
+								}
+								if(datumMap[key] && items[datumMap[key]] && items[key].pre24HoursHistory.totalNum && items[key].pre24Hours.totalNum)
+								{//计算当前不足十分钟内数据和基准对比的不稳定性
+									var totalNumExpect = items[key].pre10MinutesHistory.totalNum*items[key].pre24Hours.totalNum/items[key].pre24HoursHistory.totalNum;
+									var hitsNumExpect = totalNumExpect/(items[key].pre10Minutes.totalNum?items[key].pre10Minutes.totalNum/items[key].pre10Minutes.hitsNum:items[key].pre24Hours.totalNum/items[key].pre24Hours.hitsNum);
+									if(Math.round(hitsNumExpect)!=items[key].pre10Minutes.hitsNum)
+									{
+										instability.push({desc:'前十分钟数据和历史的偏差',value:Math.abs(hitsNumExpect-items[key].pre10Minutes.hitsNum)/(hitsNumExpect+items[key].pre10Minutes.hitsNum)*Math.atan(hitsNumExpect+items[key].pre10Minutes.hitsNum)});
+										totalInstability+=instability[instability.length-1].value;
+									}
+								}
+								instability.sort(function(a,b){return b.value- a.value;});
+								item.instability=instability;
+								item.instabilityNum=instability[0]?(instability[0].value+Math.log(totalInstability)):0;
+							}
+						});
 					});
 				}
 				run();

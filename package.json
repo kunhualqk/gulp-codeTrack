@@ -1,29 +1,30 @@
 {
-  "name": "gulp-codetrack",
-  "version": "0.1.1",
-  "description": "codeTrack gulp plugin",
-  "keywords": [
-    "gulpplugin",
-    "codeTrack",
-    "gulp"
-  ],
-  "homepage": "https://github.com/kunhualqk/gulp-codeTrack",
-  "bugs": {
-    "url": "https://github.com/kunhualqk/gulp-codeTrack/issues",
-    "email": "kunhualqk@gmail.com"
-  },
-  "license": "MIT",
-  "author": {
-    "name": "kunhualqk",
-    "email": "kunhualqk@gmail.com",
-    "url": "https://github.com/kunhualqk"
-  },
-  "main": "./index.js",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/kunhualqk/gulp-codeTrack.git"
-  },
-  "dependencies": {
-	  "through2": "~0.6.1"
-  }
+	"name": "gulp-codetrack",
+	"version": "0.1.1",
+	"description": "codeTrack gulp plugin",
+	"keywords": [
+		"gulpplugin",
+		"codeTrack",
+		"gulp"
+	],
+	"homepage": "https://github.com/kunhualqk/gulp-codeTrack",
+	"bugs": {
+		"url": "https://github.com/kunhualqk/gulp-codeTrack/issues",
+		"email": "kunhualqk@gmail.com"
+	},
+	"license": "MIT",
+	"author": {
+		"name": "kunhualqk",
+		"email": "kunhualqk@gmail.com",
+		"url": "https://github.com/kunhualqk"
+	},
+	"main": "./index.js",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/kunhualqk/gulp-codeTrack.git"
+	},
+	"dependencies": {
+		"through2": "~0.6.1",
+		"uglify-js": "^2.4.15"
+	}
 }

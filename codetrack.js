@@ -200,16 +200,14 @@ module.exports = function (option) {
 			});
 		},
 		monitor: function(){
-			var self=this;
-			trackdata.onDatumMap(function(datumMap){
-				function run(){
-					trackdata.onCurrentInstability(function(instabilityMap){
-						console.log(instabilityMap);
-					},Math.ceil(new Date()/1000),datumMap);
-				}
-				run();
-				setInterval(run,Math.pow(2,17));
-			});
+			function run(){
+				trackdata.onCurrentInstability(function(instabilityList){
+					fs.writeFileSync(path.join(option.workPath, "instability.json"), JSON.stringify(instabilityList, null, 4));
+					console.log("saved");
+				});
+			}
+			run();
+			setInterval(run,Math.pow(2,17));
 		},
 		command:function(argu){
 			switch(argu[0].replace(/^-+/,''))

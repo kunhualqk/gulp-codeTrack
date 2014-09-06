@@ -16,6 +16,7 @@
     var module={};
     __TrackData;
     window.TrackData=module.exports;
+    module=undefined;
     KISSY.use('mui/code-tracker/reporter', function (S,Reporter) {
         Reporter.init(__TrackOption);
     });

@@ -177,14 +177,17 @@ module.exports = function (option) {
 						});
 						item.pre24Hours.totalNum += data[key].totalNum;
 						item.pre24Hours.hitsNum += data[key].hitsNum;
+						item.pre24Hours.exampleURL = data[key].exampleURL;
 						var time = data[key] && data[key].time;
 						if (time && time[Math.floor(data.maxTime / 600)]) {//当前数据
 							item.current.totalNum += time[Math.floor(data.maxTime / 600)].totalNum;
 							item.current.hitsNum += time[Math.floor(data.maxTime / 600)].hitsNum;
+							item.current.exampleURL = time[Math.floor(data.maxTime / 600)].exampleURL;
 						}
 						if (time && time[Math.floor(data.maxTime / 600) - 1]) {//前十分钟数据
 							item.pre10Minutes.totalNum += time[Math.floor(data.maxTime / 600) - 1].totalNum;
 							item.pre10Minutes.hitsNum += time[Math.floor(data.maxTime / 600) - 1].hitsNum;
+							item.pre10Minutes.exampleURL = time[Math.floor(data.maxTime / 600) - 1].exampleURL;
 						}
 					}
 					for (var key in historyData) {
@@ -202,14 +205,17 @@ module.exports = function (option) {
 						});
 						item.pre24HoursHistory.totalNum += historyData[key].totalNum;
 						item.pre24HoursHistory.hitsNum += historyData[key].hitsNum;
+						item.pre24HoursHistory.exampleURL = historyData[key].exampleURL;
 						var time = historyData[key] && historyData[key].time;
 						if (time && time[Math.floor(data.maxTime / 600) - 144]) {//当前数据
 							item.currentHistory.totalNum += time[Math.floor(data.maxTime / 600) - 144].totalNum;
 							item.currentHistory.hitsNum += time[Math.floor(data.maxTime / 600) - 144].hitsNum;
+							item.currentHistory.exampleURL = time[Math.floor(data.maxTime / 600) - 144].exampleURL;
 						}
 						if (time && time[Math.floor(data.maxTime / 600) - 144 - 1]) {//前十分钟数据
 							item.pre10MinutesHistory.totalNum += time[Math.floor(data.maxTime / 600) - 144 - 1].totalNum;
 							item.pre10MinutesHistory.hitsNum += time[Math.floor(data.maxTime / 600) - 144 - 1].hitsNum;
+							item.pre10MinutesHistory.exampleURL = time[Math.floor(data.maxTime / 600) - 144 - 1].exampleURL;
 						}
 					}
 					//计算不稳定性

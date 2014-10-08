@@ -112,7 +112,7 @@ module.exports = function (option) {
 				for(var i=samplingInfo.length-1;i>=0;i--)
 				{
 					var sampling = samplingInfo[i];
-					if(sampling.datum){datumMap[sampling.name] = sampling.datum;}
+					datumMap[sampling.name] = sampling.datum||"";
 				}
 				callback(datumMap);
 			});

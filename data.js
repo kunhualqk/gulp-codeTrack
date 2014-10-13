@@ -138,7 +138,7 @@ module.exports = function (option) {
 			//对数据分段请求
 			for(var st=Math.floor(params.st/14400)*14400;st<params.et;st+=14400){
 				count++;
-				onData({st: st, et: st + 14400}, function (data) {
+				onData({st: st, et: st + 14400-1}, function (data) {
 					//合并数据
 					for(var key in data)
 					{

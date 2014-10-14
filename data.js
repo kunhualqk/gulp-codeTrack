@@ -187,9 +187,6 @@ module.exports = function (option) {
 							result -= step;
 						}
 						np = p * (m - n + i) / i;
-						if (!(p === Infinity) && (!np || isNaN(np) || np === Infinity)) {
-							console.log([p, (m - n + i) / i]);
-						}
 					}
 					p = np;
 				}

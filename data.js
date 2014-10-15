@@ -298,7 +298,7 @@ module.exports = function (option) {
 							//计算和基准点之间的不稳定性
 							var datumName = key.indexOf("|") > 0 ? key.substring(0, key.indexOf("|")) : datumMap[key];
 							if (datumName && items[datumName] && items[datumName].pre24Hours.totalNum && items[key].pre24Hours.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
-								var totalNumExpect = items[datumName].current.totalNum * items[key].pre24Hours.totalNum / items[datumName].pre24Hours.totalNum * (data.maxTime % 600) / 600;
+								var totalNumExpect = items[datumName].current.totalNum * items[key].pre24Hours.totalNum / items[datumName].pre24Hours.totalNum;
 								var hitsNumExpect = totalNumExpect / (items[key].current.totalNum ? items[key].current.totalNum / items[key].current.hitsNum : items[key].pre24Hours.totalNum / items[key].pre24Hours.hitsNum);
 								if (Math.round(hitsNumExpect) != items[key].current.hitsNum) {
 									instability.push({desc: '当前数据(' + items[key].current.hitsNum + ')<>基准(' + Math.round(hitsNumExpect) + ')', value: cmp(hitsNumExpect, items[key].current.hitsNum)});
@@ -313,8 +313,8 @@ module.exports = function (option) {
 									totalInstability += instability[instability.length - 1].value;
 								}
 							}
-							if (items[key].pre24HoursHistory.totalNum && items[key].pre24Hours.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
-								var totalNumExpect = items[key].currentHistory.totalNum * items[key].pre24Hours.totalNum / items[key].pre24HoursHistory.totalNum * (data.maxTime % 600) / 600;
+							if (items[key].pre24HoursHistory.totalNum && items[key].pre24Hours.totalNum && items['app.init'] && items['app.init'].pre10Minutes.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
+								var totalNumExpect = items[key].currentHistory.totalNum * items[key].pre24Hours.totalNum / items[key].pre24HoursHistory.totalNum * items['app.init'].current.totalNum / items['app.init'].pre10Minutes.totalNum;
 								var hitsNumExpect = totalNumExpect / (items[key].current.totalNum ? items[key].current.totalNum / items[key].current.hitsNum : items[key].pre24Hours.totalNum / items[key].pre24Hours.hitsNum);
 								if (Math.round(hitsNumExpect) != items[key].current.hitsNum) {
 									instability.push({desc: '当前数据(' + items[key].current.hitsNum + ')<>历史(' + Math.round(hitsNumExpect) + ')', value: cmp(hitsNumExpect, items[key].current.hitsNum)});

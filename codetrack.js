@@ -59,7 +59,7 @@ module.exports = function (option) {
 						}
 						return ".codeTrack(" + pvLev + "," + param + ")";
 					});
-					str = str.replace(/__codeTrack/g, function () {
+					str = str.replace(/(\s*0\s*)\.__codeTrack/g, function () {
 						return "(" + (function () {
 							var trackMap = {}, firstName = "";
 							return function (pvLev, name, datumName, config) {
@@ -199,11 +199,79 @@ module.exports = function (option) {
 				fs.writeFileSync(path.join(option.workPath, "baseData.json"), JSON.stringify(data, null, 4))
 			});
 		},
+		persistentMonitor: function(){
+			var cp = require('child_process'),
+				child;
+			function update(){
+				//定时更新库的内容
+				//if(option.repositoryType=="git")
+				{
+					var ls = cp.exec('git pull');
+					ls.stdout.on('data', function (data) {
+						if(/Already/.test(data)){return;}
+						start();
+					});
+				}
+			}
+			function start(flag)
+			{
+				if(!flag && child)
+				{
+					child.kill();
+				}
+				child = cp.exec('gulp codetrack -monitor');
+				child.stdout.on('data', function (data) {
+				  console.log(data);
+				});
+				child.stderr.on('data', function (data) {
+				  console.log(data);
+				});
+				child.on('close', function (code, signal) {
+					start(true);
+				});
+			}
+			update();
+			start();
+			setInterval(update,Math.pow(2,20));//每15分钟更新库
+		},
 		monitor: function(){
+			var lastMap={};
 			function run(){
 				trackdata.onCurrentInstability(function(instabilityList){
-					fs.writeFileSync(path.join(option.workPath, "instability.json"), JSON.stringify(instabilityList, null, 4));
-					console.log("saved");
+					var alertMap={},msg=[];
+					for(var i=0;i<instabilityList.length;i++)
+					{
+						if(instabilityList[i].instabilityNum<1000){break;}
+						alertMap[instabilityList[i].name]=instabilityList[i];
+						if(!lastMap[instabilityList[i].name])
+						{
+							msg.push(instabilityList[i].name+"出现"+(instabilityList[i].instabilityNum<10000?"波动":"震荡"));
+						}
+						else
+						{
+							if(instabilityList[i].instabilityNum<10000)
+							{
+								if(lastMap[instabilityList[i].name].instabilityNum>=10000)
+								{
+									msg.push(instabilityList[i].name+"降至波动");
+								}
+							}
+							else
+							{
+								if (lastMap[instabilityList[i].name].instabilityNum < 10000) {
+									msg.push(instabilityList[i].name + "升至震荡");
+								}
+							}
+						}
+					}
+					for(var key in lastMap){
+						if(!alertMap[key])
+						{
+							msg.push(key+"回归稳定");
+						}
+					}
+					lastMap=alertMap;
+					console.log(msg.join(";"));
 				});
 			}
 			run();
@@ -220,6 +288,9 @@ module.exports = function (option) {
 					var st=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)).valueOf()/1000,
 						et=new Date(parseInt(result[1],10),parseInt(result[2],10)-1,parseInt(result[3],10)+1).valueOf()/1000;
 					this.updateData({st:st,et:et});
+					break;
+				case "persistentMonitor":
+					this.persistentMonitor();
 					break;
 				case "monitor":
 					this.monitor();

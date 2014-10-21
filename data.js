@@ -174,6 +174,11 @@ module.exports = function (option) {
 				if (m < n) {
 					return cmp(n, m);
 				}
+				var max = option.sampleNumDaily || 8192;
+				if(m>max){
+					m=max;
+					n=Math.round(n*max/m);
+				}
 				var p = 1.0, np, result = 0, step = 512, stepNum = Math.pow(2, step);
 				for (var i = n + 1; i <= m; i++) {
 					np = p * (m - n + i) / i;

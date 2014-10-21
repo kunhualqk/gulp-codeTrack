@@ -59,7 +59,7 @@ module.exports = function (option) {
 						}
 						return ".codeTrack(" + pvLev + "," + param + ")";
 					});
-					str = str.replace(/(\s*0\s*)\.__codeTrack/g, function () {
+					str = str.replace(/\(\s*0\s*\)\.__codeTrack/g, function () {
 						return "(" + (function () {
 							var trackMap = {}, firstName = "";
 							return function (pvLev, name, datumName, config) {

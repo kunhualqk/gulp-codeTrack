@@ -178,7 +178,7 @@ module.exports = function (option) {
 			fs.writeFileSync(path.join(option.workPath, "report.html"), html);
 		},
 		updateData: function(params){
-			trackdata.onRemoteData(params,function(data){
+			trackdata.onBufferData(params,function(data){
 				var timeInfo = {};
 				for (var key in data) {
 					var item = data[key];

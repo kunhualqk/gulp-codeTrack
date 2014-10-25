@@ -103,7 +103,7 @@ module.exports = function (option) {
 								}
 								var distribution = __distribution,
 									timeFactor = distribution ? distribution[Math.floor((now + 28800000) / (86400000 / 144)) % 144] : 1,
-									sampling = Math.round(Math.max(Math.pow(2, pvLev) / timeFactor / (__sampleNumDaily || 8192), 1 / (__maxSamplingRatio || (1 / 16))));
+									sampling = Math.round(Math.max(Math.pow(2, pvLev) * timeFactor / (__sampleNumDaily || 8192), 1 / (__maxSamplingRatio || (1 / 16))));
 								if (Math.floor(Math.random() * sampling) > 0) {
 									return;
 								}

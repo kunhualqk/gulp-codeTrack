@@ -195,7 +195,7 @@ module.exports = function (option) {
 					}
 					p = np;
 				}
-				return result + Math.log(p) / Math.log(2);
+				return (result + Math.log(p) / Math.log(2))*Math.abs(Math.atan2(m,n)-Math.PI/4);
 			}
 
 			var self = this;
@@ -318,10 +318,11 @@ module.exports = function (option) {
 									totalInstability += instability[instability.length - 1].value;
 								}
 							}
+							//因为服务端不是严格按照时间处理数据，因此无法得知当前数据占10分钟的比例，而依靠app.init进行时间判断也有较大的不确定性，因此暂时无法支持对历史数据进行分析
 							if (items[key].pre24HoursHistory.totalNum && items[key].pre24Hours.totalNum && items['app.init'] && items['app.init'].pre10Minutes.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
 								var totalNumExpect = items[key].currentHistory.totalNum * items[key].pre24Hours.totalNum / items[key].pre24HoursHistory.totalNum * items['app.init'].current.totalNum / items['app.init'].pre10Minutes.totalNum;
 								var hitsNumExpect = totalNumExpect / (items[key].current.totalNum ? items[key].current.totalNum / items[key].current.hitsNum : items[key].pre24Hours.totalNum / items[key].pre24Hours.hitsNum);
-								if (Math.round(hitsNumExpect) != items[key].current.hitsNum) {
+								if (Math.round(hitsNumExpect) < items[key].current.hitsNum) {
 									instability.push({desc: '当前数据(' + items[key].current.hitsNum + ')<>历史(' + Math.round(hitsNumExpect) + ')', value: cmp(hitsNumExpect, items[key].current.hitsNum)});
 									totalInstability += instability[instability.length - 1].value;
 								}

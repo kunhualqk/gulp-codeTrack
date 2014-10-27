@@ -129,7 +129,7 @@ module.exports = function (option) {
 								img.onload = img.onerror = function () {
 									window[n] = null;
 								};
-								img.src = "http://gm.mmstat.com/ued.1.1.2?" + [
+								img.src = "http://gm.mmstat.com/jstracker.2?" + [
 									"type=9",
 									"id=jstracker",
 									"v=0.01",

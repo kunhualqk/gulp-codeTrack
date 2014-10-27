@@ -1,6 +1,6 @@
 {
 	"name": "gulp-codetrack",
-	"version": "0.1.8",
+	"version": "0.2.0",
 	"description": "codeTrack gulp plugin",
 	"keywords": [
 		"gulpplugin",

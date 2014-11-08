@@ -32,29 +32,50 @@ function onString(file, callback) {
  * @param {Number} [option.defaultSamplingRatio=1/128] 默认采样比例（在没有数据来计算采样比例时使用，例如新增样本）
  */
 module.exports = function (option) {
-	var list=[];
+	var trackList = [],
+		fileList = [],
+		trackMap = {};
 	var codetrack = CodeTrack(option);
 	codetrack.implant = function () {
 		return through2.obj(function (file, encoding, callback) {
 			var self = this;
 			onString(file, function (str) {
+				var trackNum = 0,
+					filePath = path.relative(file.cwd, file.path);
 				codetrack.implantStr(str, function (str) {
 					file.contents = new Buffer(str);
 					self.push(file);
+					if(str.length){
+						fileList.push({
+							trackNum:trackNum,
+							codeLen:str.length,
+							file:filePath
+						});
+					}
 					callback();
 				}, {
 					onError:function(param){
-						console.log(["track format error:", param]);
+						console.log(["[codeTrack]track format error:", param]);
 					},
 					onSampling: function (item) {
-						item.file = path.relative(file.cwd, file.path);
-						list.push(item);
+						item.file = filePath;
+						trackMap[item.name]++;
+						trackList.push(item);
+						trackNum++;
 					}
 				});
 			});
 		}, function () {
-			console.log("found track place:" + list.length);
-			codetrack.updateReport(list);
+			console.log("[codeTrack]Found "+trackList.length+" track point in " + fileList.length + " files;");
+			fileList.sort(function(a,b){return a.trackNum/ a.codeLen-b.trackNum/b.codeLen});
+			var fileStr=[];
+			for(var i=0;i<10;i++)
+			{
+				if(!fileList[i]){break;}
+				fileStr.push(fileList[i].file+"("+fileList[i].trackNum+")");
+			}
+			console.log("[codeTrack]Lowest ratio files:"+fileStr.join(",")+";");
+			codetrack.updateReport(trackList);
 		})
 	}
 	return codetrack;

@@ -169,7 +169,7 @@ module.exports = function (option) {
 				});
 			}
 		},
-		onCurrentInstability: function (callback, now) {
+		onCurrentInstability: function (callback, now, timeRange) {
 			function cmp(m, n) {
 				if (m < n) {
 					return cmp(n, m);
@@ -197,8 +197,8 @@ module.exports = function (option) {
 				}
 				return (result + Math.log(p) / Math.log(2))*Math.abs(Math.atan2(m,n)-Math.PI/4);
 			}
-
-			var self = this;
+			timeRange=timeRange||86400;
+			var self = this;//6小时
 			//请求24小时内的数据
 			now = Math.ceil((now || new Date()) / 1000);
 			self.onDatumMap(function (datumMap) {
@@ -208,10 +208,12 @@ module.exports = function (option) {
 							return {
 								current: {totalNum: 0, hitsNum: 0},
 								pre10Minutes: {totalNum: 0, hitsNum: 0},
+								preRange: {totalNum: 0, hitsNum: 0},
 								pre24Hours: {totalNum: 0, hitsNum: 0},
 								currentHistory: {totalNum: 0, hitsNum: 0},
 								pre10MinutesHistory: {totalNum: 0, hitsNum: 0},
-								pre24HoursHistory: {totalNum: 0, hitsNum: 0}
+								preRangeHistory: {totalNum: 0, hitsNum: 0},
+								pre24HoursHistory: {totalNum: 0, hitsNum: 0},
 							}
 						}
 
@@ -234,6 +236,19 @@ module.exports = function (option) {
 								groupItem.pre24Hours.exampleURL = data[key].exampleURL;
 							}
 							var time = data[key] && data[key].time;
+							for(var i=Math.floor(data.maxTime / 600);i>=Math.floor((data.maxTime - timeRange)/ 600);i--)
+							{
+								var timeItem = time && time[i];
+								if(!timeItem){continue;}
+								item.preRange.totalNum += timeItem.totalNum;
+								item.preRange.hitsNum += timeItem.hitsNum;
+								item.preRange.exampleURL = timeItem.exampleURL;
+								if (groupItem) {
+									groupItem.preRange.totalNum += timeItem.totalNum;
+									groupItem.preRange.hitsNum += timeItem.hitsNum;
+									groupItem.preRange.exampleURL = timeItem.exampleURL;
+								}
+							}
 							if (time && time[Math.floor(data.maxTime / 600)]) {//当前数据
 								item.current.totalNum += time[Math.floor(data.maxTime / 600)].totalNum;
 								item.current.hitsNum += time[Math.floor(data.maxTime / 600)].hitsNum;
@@ -272,6 +287,20 @@ module.exports = function (option) {
 								groupItem.pre24HoursHistory.exampleURL = historyData[key].exampleURL;
 							}
 							var time = historyData[key] && historyData[key].time;
+
+							for(var i=Math.floor(data.maxTime / 600)- 144;i>=Math.floor((data.maxTime - timeRange)/ 600)- 144;i--)
+							{
+								var timeItem = time && time[i];
+								if(!timeItem){continue;}
+								item.preRangeHistory.totalNum += timeItem.totalNum;
+								item.preRangeHistory.hitsNum += timeItem.hitsNum;
+								item.preRangeHistory.exampleURL = timeItem.exampleURL;
+								if (groupItem) {
+									groupItem.preRangeHistory.totalNum += timeItem.totalNum;
+									groupItem.preRangeHistory.hitsNum += timeItem.hitsNum;
+									groupItem.preRangeHistory.exampleURL = timeItem.exampleURL;
+								}
+							}
 							if (time && time[Math.floor(data.maxTime / 600) - 144]) {//当前数据
 								item.currentHistory.totalNum += time[Math.floor(data.maxTime / 600) - 144].totalNum;
 								item.currentHistory.hitsNum += time[Math.floor(data.maxTime / 600) - 144].hitsNum;
@@ -298,43 +327,68 @@ module.exports = function (option) {
 						for (var key in items) {
 							items[key].name = key;
 							var datumName = key.indexOf("|") > 0 ? key.substring(0, key.indexOf("|")) : datumMap[key];
-							items[key].datumName = datumName;
-							var instability = [], totalInstability = 0, unit = 0.1;
-							//计算和基准点之间的不稳定性
-							var datumName = key.indexOf("|") > 0 ? key.substring(0, key.indexOf("|")) : datumMap[key];
-							if (datumName && items[datumName] && items[datumName].pre24Hours.totalNum && items[key].pre24Hours.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
-								var totalNumExpect = items[datumName].current.totalNum * items[key].pre24Hours.totalNum / items[datumName].pre24Hours.totalNum;
-								var hitsNumExpect = totalNumExpect / (items[key].current.totalNum ? items[key].current.totalNum / items[key].current.hitsNum : items[key].pre24Hours.totalNum / items[key].pre24Hours.hitsNum);
-								if (Math.round(hitsNumExpect) != items[key].current.hitsNum) {
-									instability.push({desc: '当前数据(' + items[key].current.hitsNum + ')<>基准(' + Math.round(hitsNumExpect) + ')', value: cmp(hitsNumExpect, items[key].current.hitsNum)});
-									totalInstability += instability[instability.length - 1].value;
-								}
+							if((!datumName || datumName==key) && (key!="app.init"))
+							{
+								datumName="app.init";
 							}
-							if (datumName && items[datumName] && items[datumName].pre24Hours.totalNum && items[key].pre24Hours.totalNum) {//计算上十分钟内数据和基准对比的不稳定性
-								var totalNumExpect = items[datumName].pre10Minutes.totalNum * items[key].pre24Hours.totalNum / items[datumName].pre24Hours.totalNum;
-								var hitsNumExpect = totalNumExpect / (items[key].pre10Minutes.totalNum ? items[key].pre10Minutes.totalNum / items[key].pre10Minutes.hitsNum : items[key].pre24Hours.totalNum / items[key].pre24Hours.hitsNum);
-								if (Math.round(hitsNumExpect) != items[key].pre10Minutes.hitsNum) {
-									instability.push({desc: '前十分钟(' + items[key].pre10Minutes.hitsNum + ')<>基准(' + Math.round(hitsNumExpect) + ')', value: cmp(hitsNumExpect, items[key].pre10Minutes.hitsNum)});
-									totalInstability += instability[instability.length - 1].value;
+							items[key].datumName = datumName;
+							var instability = [], unitRatio = 0.5,
+								credibleNum=4;	//采样个数大于此值，才会信任此采样比例
+
+							var currentInstability = {},currentInstabilityValue;//当前时间段的不稳定性
+							if (datumName && items[datumName] && items[datumName].preRange.totalNum && items[key].preRange.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
+								var totalNumExpect = items[datumName].current.totalNum * items[key].preRange.totalNum / items[datumName].preRange.totalNum;
+								var hitsNumExpect = totalNumExpect / (items[key].current.hitsNum>credibleNum ? items[key].current.totalNum / items[key].current.hitsNum : items[key].preRange.totalNum / items[key].preRange.hitsNum);
+								if (Math.round(hitsNumExpect) != items[key].current.hitsNum && (currentInstabilityValue=cmp(hitsNumExpect, items[key].current.hitsNum))) {
+									currentInstability.descDatum = '当前数据(' + items[key].current.hitsNum + ')<>基准(' + Math.round(hitsNumExpect) + ')';
+									currentInstability.valueDatum = currentInstabilityValue;
+								}
+								else{
+									currentInstability=null;
 								}
 							}
 							//因为服务端不是严格按照时间处理数据，因此无法得知当前数据占10分钟的比例，而依靠app.init进行时间判断也有较大的不确定性，因此暂时无法支持对历史数据进行分析
-							if (items[key].pre24HoursHistory.totalNum && items[key].pre24Hours.totalNum && items['app.init'] && items['app.init'].pre10Minutes.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
-								var totalNumExpect = items[key].currentHistory.totalNum * items[key].pre24Hours.totalNum / items[key].pre24HoursHistory.totalNum * items['app.init'].current.totalNum / items['app.init'].pre10Minutes.totalNum;
-								var hitsNumExpect = totalNumExpect / (items[key].current.totalNum ? items[key].current.totalNum / items[key].current.hitsNum : items[key].pre24Hours.totalNum / items[key].pre24Hours.hitsNum);
+							if (currentInstability && items[key].preRangeHistory.totalNum && items[key].preRange.totalNum && items['app.init'] && items['app.init'].current.hitsNum>credibleNum && items['app.init'].pre10Minutes.hitsNum>credibleNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
+								var totalNumExpect = items[key].currentHistory.totalNum * items[key].preRange.totalNum / items[key].preRangeHistory.totalNum * items['app.init'].current.totalNum / items['app.init'].pre10Minutes.totalNum;
+								var hitsNumExpect = totalNumExpect / (items[key].current.hitsNum>credibleNum ? items[key].current.totalNum / items[key].current.hitsNum : items[key].preRange.totalNum / items[key].preRange.hitsNum);
 								if (Math.round(hitsNumExpect) < items[key].current.hitsNum) {
-									instability.push({desc: '当前数据(' + items[key].current.hitsNum + ')<>历史(' + Math.round(hitsNumExpect) + ')', value: cmp(hitsNumExpect, items[key].current.hitsNum)});
-									totalInstability += instability[instability.length - 1].value;
+									currentInstability.descHistory= '当前数据(' + items[key].current.hitsNum + ')<>历史(' + Math.round(hitsNumExpect) + ')';
+									currentInstability.valueHistory= cmp(hitsNumExpect, items[key].current.hitsNum);
 								}
 							}
-							if (items[key].pre24HoursHistory.totalNum && items[key].pre24Hours.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
-								var totalNumExpect = items[key].pre10MinutesHistory.totalNum * items[key].pre24Hours.totalNum / items[key].pre24HoursHistory.totalNum;
-								var hitsNumExpect = totalNumExpect / (items[key].pre10Minutes.totalNum ? items[key].pre10Minutes.totalNum / items[key].pre10Minutes.hitsNum : items[key].pre24Hours.totalNum / items[key].pre24Hours.hitsNum);
+							if(currentInstability && (currentInstability.valueDatum || currentInstability.valueHistory)){
+								currentInstability.value = currentInstability.valueDatum?(currentInstability.valueDatum+Math.min(currentInstability.valueDatum,currentInstability.valueHistory||0)*unitRatio):currentInstability.valueHistory;
+								currentInstability.desc=!currentInstability.valueHistory || currentInstability.valueHistory<currentInstability.valueDatum?currentInstability.descDatum:currentInstability.descHistory;
+								instability.push(currentInstability);
+							}
+
+							var historyInstability = {},historyInstabilityValue;//前十分钟的不稳定性
+							if (datumName && items[datumName] && items[datumName].preRange.totalNum && items[key].preRange.totalNum) {//计算上十分钟内数据和基准对比的不稳定性
+								var totalNumExpect = items[datumName].pre10Minutes.totalNum * items[key].preRange.totalNum / items[datumName].preRange.totalNum;
+								var hitsNumExpect = totalNumExpect / (items[key].pre10Minutes.hitsNum>credibleNum ? items[key].pre10Minutes.totalNum / items[key].pre10Minutes.hitsNum : items[key].preRange.totalNum / items[key].preRange.hitsNum);
+								if (Math.round(hitsNumExpect) != items[key].pre10Minutes.hitsNum && (historyInstabilityValue=cmp(hitsNumExpect, items[key].pre10Minutes.hitsNum))) {
+									historyInstability.descDatum='前十分钟(' + items[key].pre10Minutes.hitsNum + ')<>基准(' + Math.round(hitsNumExpect) + ')';
+									historyInstability.valueDatum= historyInstabilityValue;
+								}
+								else
+								{
+									historyInstability=null;
+								}
+							}
+							if (historyInstability && items[key].preRangeHistory.totalNum && items[key].preRange.totalNum) {//计算当前不足十分钟内数据和基准对比的不稳定性
+								var totalNumExpect = items[key].pre10MinutesHistory.totalNum * items[key].preRange.totalNum / items[key].preRangeHistory.totalNum;
+								var hitsNumExpect = totalNumExpect / (items[key].pre10Minutes.hitsNum>credibleNum ? items[key].pre10Minutes.totalNum / items[key].pre10Minutes.hitsNum : items[key].preRange.totalNum / items[key].preRange.hitsNum);
 								if (Math.round(hitsNumExpect) != items[key].pre10Minutes.hitsNum) {
-									instability.push({desc: '前十分钟(' + items[key].pre10Minutes.hitsNum + ')<>历史(' + Math.round(hitsNumExpect) + ')', value: cmp(hitsNumExpect, items[key].pre10Minutes.hitsNum)});
-									totalInstability += instability[instability.length - 1].value;
+									historyInstability.descHistory= '前十分钟(' + items[key].pre10Minutes.hitsNum + ')<>历史(' + Math.round(hitsNumExpect) + ')';
+									historyInstability.valueHistory= cmp(hitsNumExpect, items[key].pre10Minutes.hitsNum);
 								}
 							}
+							if(historyInstability && (historyInstability.valueDatum || historyInstability.valueHistory)){
+								historyInstability.value = historyInstability.valueDatum?(historyInstability.valueDatum+Math.min(historyInstability.valueDatum,historyInstability.valueHistory||0)*unitRatio):historyInstability.valueHistory;
+								historyInstability.desc=!historyInstability.valueHistory || historyInstability.valueHistory<historyInstability.valueDatum?historyInstability.descDatum:historyInstability.descHistory;
+								instability.push(historyInstability);
+							}
+
 							instability.sort(function (a, b) {
 								return b.value - a.value;
 							});
@@ -343,7 +397,7 @@ module.exports = function (option) {
 							var instabilityNum = 0, unit = 1;
 							for (var i = 0; i < instability.length; i++) {
 								instabilityNum += instability[i].value * unit;
-								unit = unit / 2;
+								unit = unit * unitRatio;
 							}
 							items[key].instabilityNum = instabilityNum;
 							list.push(items[key]);

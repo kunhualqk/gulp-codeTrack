@@ -15,6 +15,13 @@ var UglifyJS = require("uglify-js");
  * @param {Number} [option.defaultSamplingRatio=1/128] 默认采样比例（在没有数据来计算采样比例时使用，例如新增样本）
  */
 module.exports = function (option) {
+	var env = process.env,filepath = path.join(env.HOME|| env.HOMEPATH|| env.USERPROFILE,"codeTrack.json");
+	if(fs.existsSync(filepath)){
+		var userJson= JSON.parse(fs.readFileSync(filepath));
+		for(var key in userJson){
+			option[key]= userJson[key];
+		}
+	}
 	var trackdata = Data(option);
 	return {
 		implantStr: function (str,callback,cfg) {
@@ -179,6 +186,9 @@ module.exports = function (option) {
 		},
 		updateData: function(params){
 			trackdata.onBufferData(params,function(data){
+				if(!data || !data.maxTime){
+					return console.log("baseData update failed");
+				}
 				var timeInfo = {};
 				for (var key in data) {
 					var item = data[key];
@@ -197,6 +207,7 @@ module.exports = function (option) {
 				}
 				data.time = timeInfo;
 				fs.writeFileSync(path.join(option.workPath, "baseData.json"), JSON.stringify(data, null, 4))
+				console.log("baseData update success");
 			});
 		},
 		persistentMonitor: function(){

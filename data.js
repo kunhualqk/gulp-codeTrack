@@ -48,7 +48,7 @@ module.exports = function (option) {
 		},
 		onRemoteJson: function (url, callback) {
 			var http = require('http');
-			http.get(url, function (res) {
+			http.get(url+ "&"+option.dataUriPostfix, function (res) {
 				var buffers = []
 				res.on('data', function (chunk) {
 					buffers.push(chunk);

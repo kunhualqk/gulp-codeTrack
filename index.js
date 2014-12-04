@@ -37,6 +37,24 @@ module.exports = function (option) {
 		trackMap = {};
 	var codetrack = CodeTrack(option);
 	codetrack.implant = function () {
+		if(option.dataAutoUpdateDay){//如果需要自动更新数据
+			var dataAutoUpdateDay= option.dataAutoUpdateDay==7? 0: option.dataAutoUpdateDay,
+				baseDataPath = path.join(option.workPath, "baseData.json"),
+				now = new Date(),
+				today = (+new Date(now.getFullYear(),now.getMonth(),now.getDay()))/1000,
+				offsetDays = now.getDay() - dataAutoUpdateDay,
+				newMinTime = today - (offsetDays>0?offsetDays:(offsetDays+7))*24*60*60,
+				newMaxTime = newMinTime+ 24 * 60 * 60-1,
+				baseMaxTime = 0;
+			if (fs.existsSync(baseDataPath)) {
+				var baseData = JSON.parse(fs.readFileSync(baseDataPath));
+				baseMaxTime = baseData.maxTime;
+			}
+			if(newMaxTime-baseMaxTime> 4 * 60 * 60)//如果时间相差四小时以上
+			{
+				codetrack.updateData({st: newMinTime,et: newMaxTime});
+			}
+		}
 		return through2.obj(function (file, encoding, callback) {
 			var self = this;
 			onString(file, function (str) {

@@ -41,7 +41,7 @@ module.exports = function (option) {
 			var dataAutoUpdateDay= option.dataAutoUpdateDay==7? 0: option.dataAutoUpdateDay,
 				baseDataPath = path.join(option.workPath, "baseData.json"),
 				now = new Date(),
-				today = (+new Date(now.getFullYear(),now.getMonth(),now.getDay()))/1000,
+				today = (+new Date(now.getFullYear(),now.getMonth(),now.getDate()))/1000,
 				offsetDays = now.getDay() - dataAutoUpdateDay,
 				newMinTime = today - (offsetDays>0?offsetDays:(offsetDays+7))*24*60*60,
 				newMaxTime = newMinTime+ 24 * 60 * 60-1,

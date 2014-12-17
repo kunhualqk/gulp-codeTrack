@@ -24,6 +24,9 @@ module.exports = function (option) {
 	}
 	var trackdata = Data(option);
 	return {
+		onData:function(callback){
+			callback(trackdata);
+		},
 		implantStr: function (str,callback,cfg) {
 			trackdata.onBaseData(function (data) {
 				//合并多个version的数据

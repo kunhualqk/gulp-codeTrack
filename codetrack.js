@@ -3,6 +3,7 @@ var fs = require('fs');
 var path = require('path');
 var Data = require('./data');
 var UglifyJS = require("uglify-js");
+var crypto = require('crypto');
 
 /**
  * @param {Object} option 选项
@@ -23,6 +24,7 @@ module.exports = function (option) {
 		}
 	}
 	var trackdata = Data(option);
+	var funcName = "_CTK"+crypto.createHash('md5').update(option.dataUri).digest('hex').substring(0,4);
 	return {
 		onData:function(callback){
 			callback(trackdata);
@@ -39,38 +41,8 @@ module.exports = function (option) {
 					(groupData[group] || (groupData[group] = {totalNum: 0})).totalNum += data[key].totalNum;
 				}
 				trackdata.onDistribution(function (distribution) {
-					str = str.replace(/\.codeTrack\((.*)\)(?:[\s;]*\/\/+([^\r\n]+))?/g, function (s, param, comment) {
-						var params = /^\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]*)['"])?/.exec(param),
-							map = {},
-							num = 0,
-							value,
-							pvLev = Math.round(Math.log((option.sampleNumDaily || 8192) / (option.defaultSamplingRatio || (1 / 128))) / Math.log(2));
-						if (!params) {
-							cfg && cfg.onError && cfg.onError(param);
-							return s;
-						}
-						cfg && cfg.onSampling && cfg.onSampling({
-							name: params[1],
-							datum: params[2],
-							comment: comment
-						});
-						for (var key in groupData) {
-							if (key == params[1]) {
-								pvLev = map._ = Math.round(Math.log(groupData[key].totalNum) / Math.log(2));
-								num++;
-							}
-							if (key.indexOf(params[1] + "|") === 0) {
-								pvLev = map[key.substring(params[1].length + 1)] = Math.round(Math.log(groupData[key].totalNum) / Math.log(2));
-								num++;
-							}
-						}
-						if (num > 1) {
-							pvLev = JSON.stringify(map);
-						}
-						return ".codeTrack(" + pvLev + "," + param + ")";
-					});
-					str = str.replace(/\(\s*0\s*\)\.__codeTrack/g, function () {
-						return "(" + (function () {
+					str = str.replace(/window\.codeTrack\s*=\s*function\s*\(\s*\)\s*{\s*}/g, function () {
+						var content = "window."+ funcName +"=(" + (function () {
 							var trackMap = {}, firstName = "";
 							return function (pvLev, name, datumName, config) {
 								config = config || {};
@@ -168,8 +140,83 @@ module.exports = function (option) {
 									default:
 										return option[p];
 								}
-							}) + ")()";
+							}) + ")();";
+						content += "(" + function () {
+							codeTrack("app.init");
+							(function (callback) {
+								if (/^(loaded|complete)$/.test(document.readyState)) {
+									return callback();
+								}
+								if (document.addEventListener) {
+									return document.addEventListener('DOMContentLoaded', callback, false);
+								}
+								(function () {
+									try {
+										document.documentElement.doScroll('left');
+										callback();
+									}
+									catch (err) {
+										setTimeout(arguments.callee, 0);
+									}
+								})();
+							})(function () {
+								codeTrack("app.timing.domready", "app.init", {autoGroup: 'time'});
+								(function (callback) {
+									if (/^(loaded|complete)$/.test(document.readyState)) {
+										return callback();
+									}
+									if (window.addEventListener) {
+										return window.addEventListener('load', callback, false);
+									}
+									if (window.attachEvent) {
+										return window.attachEvent('onload', callback);
+									}
+								})(function () {
+									setTimeout(function () {
+										codeTrack("app.timing.onload", "app.timing.domready", {autoGroup: 'time'});
+										var usedJSHeapSize = window.performance && performance.memory && performance.memory.usedJSHeapSize;
+										if (usedJSHeapSize) {
+											codeTrack("app.memory.onload", "app.init", {group: (usedJSHeapSize <= 0 ? 0 : Math.floor(Math.log(usedJSHeapSize) / Math.log(2)))})
+										}
+									}, 0)
+								});
+							});
+						}.toString() + ")();";
+						return content;
 					})
+					str = str.replace(/(\.?codeTrack)\((.*)\)(?:[\s;]*\/\/+([^\r\n]+))?/g, function (s, name, param, comment) {
+						var params = /^\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]*)['"])?/.exec(param),
+							map = {},
+							num = 0,
+							value,
+							pvLev = Math.round(Math.log((option.sampleNumDaily || 8192) / (option.defaultSamplingRatio || (1 / 128))) / Math.log(2));
+						if (!params) {
+							cfg && cfg.onError && cfg.onError(param);
+							return s;
+						}
+						cfg && cfg.onSampling && cfg.onSampling({
+							name: params[1],
+							datum: params[2],
+							comment: comment
+						});
+						for (var key in groupData) {
+							if (key == params[1]) {
+								pvLev = map._ = Math.round(Math.log(groupData[key].totalNum) / Math.log(2));
+								num++;
+							}
+							if (key.indexOf(params[1] + "|") === 0) {
+								pvLev = map[key.substring(params[1].length + 1)] = Math.round(Math.log(groupData[key].totalNum) / Math.log(2));
+								num++;
+							}
+						}
+						if (num > 1) {
+							pvLev = JSON.stringify(map);
+						}
+						if (name == "codeTrack") {
+							name = funcName;
+						}
+						return name + "(" + pvLev + "," + param + ")";
+					});
 					callback(new Buffer(str));
 
 				});

@@ -210,6 +210,12 @@ module.exports = function (option) {
 							}
 						}
 						if (num > 1) {
+							for(var key in map){//删除过低的key
+								if(Math.pow(2, map[key]) / (option.sampleNumDaily || 8192)< 1 / (option.maxSamplingRatio || (1 / 16)))
+								{
+									delete map[key];
+								}
+							}
 							pvLev = JSON.stringify(map);
 						}
 						if (name == "codeTrack") {

@@ -48,7 +48,7 @@ module.exports = function (option) {
 		},
 		onRemoteJson: function (url, callback) {
 			var http = require('http');
-			http.get(url+ "&"+option.dataUriPostfix, function (res) {
+			http.get(url, function (res) {
 				var buffers = []
 				res.on('data', function (chunk) {
 					buffers.push(chunk);
@@ -66,7 +66,15 @@ module.exports = function (option) {
 			self.onLocalJson("baseData.json",callback);
 		}),
 		onRemoteData: function (params, callback) {
-			self.onRemoteJson(option.reportUri + "url=" + encodeURIComponent(option.dataUri) + "&st=" + params.st + "&et=" + params.et + "",function(data){
+			var url = option.reportUri + "url=" + encodeURIComponent(option.dataUri) + "&st=" + params.st + "&et=" + params.et ;
+			if (option.dataToken) {
+				url += "&url_token=" + option.dataToken;
+			}
+			if (option.dataUriPostfix) {
+				url += "&" + option.dataUriPostfix;
+			}
+
+			self.onRemoteJson(url ,function(data){
 				//对远程数据进行修正
 				for(var key in data){
 					if(!data || !data[key]){continue;}

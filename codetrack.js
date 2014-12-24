@@ -42,7 +42,7 @@ module.exports = function (option) {
 				}
 				trackdata.onDistribution(function (distribution) {
 					str = str.replace(/window\.codeTrack\s*=\s*function\s*\(\s*\)\s*{\s*}/g, function () {
-						var content = "window."+ funcName +"=(" + (function () {
+						var content = "window."+ funcName +"=window." + funcName + "||(" + (function () {
 							var trackMap = {}, firstName = "";
 							return function (pvLev, name, datumName, config) {
 								config = config || {};
@@ -243,7 +243,7 @@ module.exports = function (option) {
 		updateData: function(params){
 			trackdata.onBufferData(params,function(data){
 				if(!data || !data.maxTime){
-					return console.log("baseData update failed");
+					return console.log("[codetrack] BaseData update failed,please check if 'dataToken' param is match with token on http://jstracker.taobao.net/index.php?a=appDetail&m=New&url="+ encodeURIComponent(option.dataUri));
 				}
 				var timeInfo = {};
 				for (var key in data) {
@@ -263,7 +263,7 @@ module.exports = function (option) {
 				}
 				data.time = timeInfo;
 				fs.writeFileSync(path.join(option.workPath, "baseData.json"), JSON.stringify(data, null, 4))
-				console.log("baseData update success");
+				console.log("[codetrack] BaseData update success");
 			});
 		},
 		persistentMonitor: function(){
@@ -338,7 +338,7 @@ module.exports = function (option) {
 						}
 					}
 					lastMap=alertMap;
-					console.log(msg.join(";"));
+					console.log("[codetrack] "+msg.join(";"));
 				});
 			}
 			run();
@@ -363,7 +363,7 @@ module.exports = function (option) {
 					this.monitor();
 					break;
 				default:
-					console.log("unknown commend:"+argu[0]);
+					console.log("[codetrack] unknown commend:"+argu[0]);
 			}
 		}
 	};

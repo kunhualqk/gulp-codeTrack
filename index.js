@@ -73,7 +73,7 @@ module.exports = function (option) {
 					callback();
 				}, {
 					onError:function(param){
-						console.log(["[codeTrack]track format error:", param]);
+						console.log(["[codetrack] Track format error:", param]);
 					},
 					onSampling: function (item) {
 						item.file = filePath;
@@ -84,7 +84,7 @@ module.exports = function (option) {
 				});
 			});
 		}, function () {
-			console.log("[codeTrack]Found "+trackList.length+" track point in " + fileList.length + " files;");
+			console.log("[codetrack] Found "+trackList.length+" track point in " + fileList.length + " files;");
 			fileList.sort(function(a,b){return a.trackNum/ a.codeLen-b.trackNum/b.codeLen});
 			var fileStr=[];
 			for(var i=0;i<10;i++)
@@ -92,7 +92,7 @@ module.exports = function (option) {
 				if(!fileList[i]){break;}
 				fileStr.push(fileList[i].file+"("+fileList[i].trackNum+")");
 			}
-			console.log("[codeTrack]Lowest ratio files:"+fileStr.join(",")+";");
+			console.log("[codetrack] Lowest ratio files:"+fileStr.join(",")+";");
 			codetrack.updateReport(trackList);
 		})
 	}

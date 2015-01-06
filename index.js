@@ -83,7 +83,7 @@ module.exports = function (option) {
 					}
 				});
 			});
-		}, function () {
+		}, function (done) {
 			console.log("[codetrack] Found "+trackList.length+" track point in " + fileList.length + " files;");
 			fileList.sort(function(a,b){return a.trackNum/ a.codeLen-b.trackNum/b.codeLen});
 			var fileStr=[];
@@ -94,6 +94,7 @@ module.exports = function (option) {
 			}
 			console.log("[codetrack] Lowest ratio files:"+fileStr.join(",")+";");
 			codetrack.updateReport(trackList);
+			done();
 		})
 	}
 	return codetrack;

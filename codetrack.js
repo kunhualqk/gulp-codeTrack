@@ -184,7 +184,7 @@ module.exports = function (option) {
 						if (name == "codeTrack") {
 							name = funcName;
 						}
-						return name + "(" + pvLev + "," + param + ")";
+						return name + "(" + pvLev + "," + param + ");";
 					});
 					callback(new Buffer(str));
 

@@ -49,7 +49,10 @@ module.exports = function (option) {
 		onRemoteJson: function (url, callback) {
 			var http = require('http');
 			http.get(url, function (res) {
-				var buffers = []
+				if (res.statusCode == "301" || res.statusCode == "302") {
+					return self.onRemoteJson(res.headers.location, callback);
+				}
+				var buffers = [];
 				res.on('data', function (chunk) {
 					buffers.push(chunk);
 				});

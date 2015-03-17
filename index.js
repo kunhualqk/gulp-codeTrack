@@ -24,7 +24,7 @@ function onString(file, callback) {
 /**
  * @param {Object} option 选项
  * @param {String} option.workPath 工作路径
- * @param {String} option.dataUri 统计数据的数据服务分类URL，例如：http://myhosts/track/'
+ * @param {String} option.dataUri 统计数据的数据服务分类URL，例如：//myhosts/track/'
  * @param {String} option.reportUri 获取统计数据的服务器URL
  * @param {String} option.version 版本号
  * @param {Number} [option.sampleNumDaily=8192] 每天每个样本期望收到的采样数

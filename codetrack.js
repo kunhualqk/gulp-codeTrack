@@ -8,7 +8,7 @@ var crypto = require('crypto');
 /**
  * @param {Object} option 选项
  * @param {String} option.workPath 工作路径
- * @param {String} option.dataUri 统计数据的数据服务分类URL，例如：http://myhosts/track/'
+ * @param {String} option.dataUri 统计数据的数据服务分类URL，例如：//myhosts/track/'
  * @param {String} option.reportUri 获取统计数据的服务器URL
  * @param {String} option.version 版本号
  * @param {Number} [option.sampleNumDaily=8192] 每天每个样本期望收到的采样数
@@ -111,7 +111,7 @@ module.exports = function (option) {
 								img.onload = img.onerror = function () {
 									window[n] = null;
 								};
-								img.src = "http://gm.mmstat.com/jstracker.2?" + [
+								img.src = "//gm.mmstat.com/jstracker.2?" + [
 									"type=9",
 									"id=jstracker",
 									"v=0.01",
@@ -206,7 +206,7 @@ module.exports = function (option) {
 		updateData: function(params){
 			trackdata.onRemoteData(params,function(data){
 				if(!data || !data.maxTime){
-					return console.log("[codetrack] BaseData update failed,please check if 'dataToken' param is match with token on http://jstracker.taobao.net/index.php?a=appDetail&m=New&url="+ encodeURIComponent(option.dataUri));
+					return console.log("[codetrack] BaseData update failed,please check if 'dataToken' param is match with token on //jstracker.taobao.net/index.php?a=appDetail&m=New&url="+ encodeURIComponent(option.dataUri));
 				}
 				var timeInfo = {};
 				for (var key in data) {

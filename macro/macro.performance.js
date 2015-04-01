@@ -59,7 +59,7 @@ module.exports = function (params, comment) {
 			});
 		});
 	}).toString()
-		.replace(/__name/g, params[1])
+		.replace(/__name/g, params[1].replace(/:/g,"."))
 		.replace(/__datum/g, params[2])
 		.replace(/__comment/g, comment)
 		.replace(/__param\s*:\s*\d+/g, function(){

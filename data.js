@@ -57,7 +57,10 @@ module.exports = function (option) {
 					buffers.push(chunk);
 				});
 				res.on('end', function () {
-					callback(JSON.parse(Buffer.concat(buffers).toString("utf8")));
+					try{
+						callback(JSON.parse(Buffer.concat(buffers).toString("utf8")));
+					}
+					catch(e){callback(null);}
 				});
 			});
 		},

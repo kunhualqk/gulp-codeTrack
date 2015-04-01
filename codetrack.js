@@ -118,7 +118,7 @@ module.exports = function (option) {
 									"nick=" + encodeURIComponent(nick),
 									"islogin=0",
 									"msg=" + encodeURIComponent(msg),
-									"file=" + encodeURIComponent(url),
+									"file=" + encodeURIComponent(config.dataUri||url),
 									"line=" + sampling,
 									"scrolltop=" + ((document.documentElement && document.documentElement.scrollTop) || (document.body && document.body.scrollTop) || 0),
 									"screen=" + screen.width + "x" + screen.height,
@@ -144,48 +144,57 @@ module.exports = function (option) {
 						content += "codeTrack('app.init');";
 						return content;
 					});
-					str = str.replace(/(?:\w[\w\d]+\.)?codeTrack\.([\w\d]+)/g, function (s, name) {
-						return  "(" + require("./method/"+name)+ ")();";
-					});
-					str = str.replace(/(\.?codeTrack)\((.*)\)(?:[\s;]*\/\/+([^\r\n]+))?/g, function (s, name, param, comment) {
-						var params = /^\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]*)['"])?/.exec(param),
-							map = {},
-							num = 0,
-							value,
-							pvLev = Math.round(Math.log((option.sampleNumDaily || 8192) / (option.defaultSamplingRatio || (1 / 128))) / Math.log(2));
-						if (!params) {
-							cfg && cfg.onError && cfg.onError(param);
-							return s;
-						}
-						cfg && cfg.onSampling && cfg.onSampling({
-							name: params[1],
-							datum: params[2],
-							comment: comment
-						});
-						for (var key in groupData) {
-							if (key == params[1]) {
-								pvLev = map._ = Math.round(Math.log(groupData[key].totalNum) / Math.log(2));
-								num++;
+					str = str.replace(/(?:\w[\w\d]+\.)?codeTrack\.([\w\d]+)/g, ";");//删除以前支持的codeTrack.performance;模式
+
+					function run(){
+						var useMacro=false;
+						str = str.replace(/(\.?codeTrack)\((.*)\)(?:[\s;]*\/\/+([^\r\n]+))?/g, function (s, name, param, comment) {
+							var params = /^\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]*)['"](?:\s*,(.*))?)?$/.exec(param),
+								map = {},
+								num = 0,
+								value,
+								pvLev = Math.round(Math.log((option.sampleNumDaily || 8192) / (option.defaultSamplingRatio || (1 / 128))) / Math.log(2));
+							if (!params) {
+								cfg && cfg.onError && cfg.onError(param);
+								return s;
 							}
-							if (key.indexOf(params[1] + "|") === 0) {
-								pvLev = map[key.substring(params[1].length + 1)] = Math.round(Math.log(groupData[key].totalNum) / Math.log(2));
-								num++;
+							if (fs.existsSync(__dirname + "/macro/" + params[1] + ".js")) {
+								useMacro = true;
+								return "(" + require("./macro/" + params[1])(params, comment) + ")();";
 							}
-						}
-						if (num > 1) {
-							for(var key in map){//删除过低的key
-								if(Math.pow(2, map[key]) / (option.sampleNumDaily || 8192)< 1 / (option.maxSamplingRatio || (1 / 16)))
-								{
-									delete map[key];
+							cfg && cfg.onSampling && cfg.onSampling({
+								name: params[1],
+								datum: params[2],
+								comment: comment
+							});
+							for (var key in groupData) {
+								if (key == params[1]) {
+									pvLev = map._ = Math.round(Math.log(groupData[key].totalNum) / Math.log(2));
+									num++;
+								}
+								if (key.indexOf(params[1] + "|") === 0) {
+									pvLev = map[key.substring(params[1].length + 1)] = Math.round(Math.log(groupData[key].totalNum) / Math.log(2));
+									num++;
 								}
 							}
-							pvLev = JSON.stringify(map);
+							if (num > 1) {
+								for (var key in map) {//删除过低的key
+									if (Math.pow(2, map[key]) / (option.sampleNumDaily || 8192) < 1 / (option.maxSamplingRatio || (1 / 16))) {
+										delete map[key];
+									}
+								}
+								pvLev = JSON.stringify(map);
+							}
+							if (name == "codeTrack") {
+								name = funcName;
+							}
+							return name + "(" + pvLev + "," + param + ");";
+						});
+						if(useMacro){
+							run();
 						}
-						if (name == "codeTrack") {
-							name = funcName;
-						}
-						return name + "(" + pvLev + "," + param + ");";
-					});
+					}
+					run();
 					callback(new Buffer(str));
 
 				});

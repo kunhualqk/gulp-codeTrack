@@ -158,7 +158,11 @@ module.exports = function (option) {
 								cfg && cfg.onError && cfg.onError(param);
 								return s;
 							}
-							var macroName= params[1].substring(0, params[1].indexOf(":"));
+							var macroName= params[1];
+							if(macroName.indexOf(":")>0)
+							{
+								macroName = macroName.substring(0, macroName.indexOf(":"));
+							}
 							if (fs.existsSync(__dirname + "/macro/" + macroName + ".js")) {
 								useMacro = true;
 								return "try{(" + require("./macro/" + macroName)(params, comment) + ")();}catch(err){setTimeout(function(){throw err;},0);};";

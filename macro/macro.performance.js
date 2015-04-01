@@ -36,6 +36,21 @@ module.exports = function (params, comment) {
 			})(function () {
 				setTimeout(function () {
 					codeTrack("macro.performance.onload", "macro.performance.domready", {__param: 1,autoGroup: 'time'});//__comment
+					var performance = window.performance;
+					if (performance) {
+						var entries = performance.getEntries(),
+							onloadTiming = performance.timing.loadEventEnd - performance.timing.navigationStart,
+							maxEntry = null;
+						for (var i = entries.length - 1; i >= 0; i--) {
+							if (entries[i].startTime < onloadTiming && (!maxEntry || maxEntry.duration < entries[i].duration)) {
+								maxEntry = entries[i];
+							}
+						}
+						if(maxEntry)
+						{
+							codeTrack("macro.performance.onloadSlowest", "macro.performance.onload", {__param: 1, autoGroup: maxEntry.name.replace(/([^\?])\?[^\?].+$/, "$1").replace(/\W+/g, '_').substr(-32)});
+						}
+					}
 					var usedJSHeapSize = window.performance && performance.memory && performance.memory.usedJSHeapSize;
 					if (usedJSHeapSize) {
 						codeTrack("macro.performance.onloadMemory", "macro.performance.onload", {__param: 1,group: (usedJSHeapSize <= 0 ? 0 : Math.floor(Math.log(usedJSHeapSize) / Math.log(2)))})

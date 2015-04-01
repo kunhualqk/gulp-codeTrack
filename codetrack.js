@@ -160,7 +160,7 @@ module.exports = function (option) {
 							}
 							if (fs.existsSync(__dirname + "/macro/" + params[1] + ".js")) {
 								useMacro = true;
-								return "(" + require("./macro/" + params[1])(params, comment) + ")();";
+								return "try{(" + require("./macro/" + params[1])(params, comment) + ")();}catch(err){setTimeout(function(){throw err;},0);};";
 							}
 							cfg && cfg.onSampling && cfg.onSampling({
 								name: params[1],

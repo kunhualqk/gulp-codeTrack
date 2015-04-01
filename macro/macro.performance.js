@@ -22,7 +22,7 @@ module.exports = function (params, comment) {
 				}
 			})();
 		})(function () {
-			codeTrack("macro.performance.domready", "__datum" , {__param:1,autoGroup: 'time'});
+			codeTrack("__name.domready", "__datum" , {__param:1,autoGroup: 'time'});
 			(function (callback) {
 				if (/^(loaded|complete)$/.test(document.readyState)) {
 					return callback();
@@ -35,7 +35,7 @@ module.exports = function (params, comment) {
 				}
 			})(function () {
 				setTimeout(function () {
-					codeTrack("macro.performance.onload", "macro.performance.domready", {__param: 1,autoGroup: 'time'});//__comment
+					codeTrack("__name.onload", "__name.domready", {__param: 1,autoGroup: 'time'});//__comment
 					var performance = window.performance;
 					if (performance) {
 						var entries = performance.getEntries(),
@@ -48,17 +48,18 @@ module.exports = function (params, comment) {
 						}
 						if(maxEntry)
 						{
-							codeTrack("macro.performance.onloadSlowest", "macro.performance.onload", {__param: 1, autoGroup: maxEntry.name.replace(/([^\?])\?[^\?].+$/, "$1").replace(/\W+/g, '_').substr(-32)});
+							codeTrack("__name.onloadSlowest", "__name.onload", {__param: 1, autoGroup: maxEntry.name.replace(/([^\?])\?[^\?].+$/, "$1").replace(/\W+/g, '_').substr(-32)});
 						}
 					}
 					var usedJSHeapSize = window.performance && performance.memory && performance.memory.usedJSHeapSize;
 					if (usedJSHeapSize) {
-						codeTrack("macro.performance.onloadMemory", "macro.performance.onload", {__param: 1,group: (usedJSHeapSize <= 0 ? 0 : Math.floor(Math.log(usedJSHeapSize) / Math.log(2)))})
+						codeTrack("__name.onloadMemory", "__name.onload", {__param: 1,group: (usedJSHeapSize <= 0 ? 0 : Math.floor(Math.log(usedJSHeapSize) / Math.log(2)))})
 					}
 				}, 0)
 			});
 		});
 	}).toString()
+		.replace(/__name/g, params[1])
 		.replace(/__datum/g, params[2])
 		.replace(/__comment/g, comment)
 		.replace(/__param\s*:\s*\d+/g, function(){

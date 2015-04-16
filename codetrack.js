@@ -218,7 +218,7 @@ module.exports = function (option) {
 			fs.writeFileSync(path.join(option.workPath, "report.html"), html);
 		},
 		updateData: function(params){
-			trackdata.onRemoteData(params,function(data){
+			trackdata.onBufferData(params,function(data){
 				if(!data || !data.maxTime){
 					return console.log("[codetrack] BaseData update failed,please check if 'dataToken' param is match with token on http://jstracker.taobao.net/index.php?a=appDetail&m=New&url="+ encodeURIComponent(option.dataUri));
 				}

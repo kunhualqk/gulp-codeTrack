@@ -52,7 +52,10 @@ module.exports = function (option) {
 			}
 			if(newMaxTime-baseMaxTime> 4 * 60 * 60)//如果时间相差四小时以上
 			{
+				try{
 				codetrack.updateData({st: newMinTime,et: newMaxTime});
+				}
+				catch(err){}
 			}
 		}
 		return through2.obj(function (file, encoding, callback) {

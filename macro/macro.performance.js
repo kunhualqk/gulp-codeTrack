@@ -48,7 +48,7 @@ module.exports = function (params, comment) {
 						}
 						if(maxEntry)
 						{
-							codeTrack("__name.onloadSlowest", "__name.onload", {__param: 1, autoGroup: maxEntry.name.replace(/([^\?])\?[^\?].+$/, "$1").replace(/\W+/g, '_').substr(-32)});
+							codeTrack("__name.onloadSlowest", "__name.onload", {__param: 1, group: maxEntry.name.replace(/([^\?])\?[^\?].+$/, "$1").replace(/\W+/g, '_').substr(-32)});
 						}
 					}
 					var usedJSHeapSize = window.performance && performance.memory && performance.memory.usedJSHeapSize;

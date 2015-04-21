@@ -22,41 +22,42 @@ module.exports = function (params, comment) {
 				}
 			})();
 		})(function () {
-			codeTrack("__name.domready", "__datum" , {__param:1,autoGroup: 'time'});
-			(function (callback) {
-				if (/^(loaded|complete)$/.test(document.readyState)) {
-					return callback();
-				}
-				if (window.addEventListener) {
-					return window.addEventListener('load', callback, false);
-				}
-				if (window.attachEvent) {
-					return window.attachEvent('onload', callback);
-				}
-			})(function () {
-				setTimeout(function () {
-					codeTrack("__name.onload", "__name.domready", {__param: 1,autoGroup: 'time'});//__comment
-					var performance = window.performance;
-					if (performance) {
-						var entries = performance.getEntries(),
-							onloadTiming = performance.timing.loadEventEnd - performance.timing.navigationStart,
-							maxEntry = null;
-						for (var i = entries.length - 1; i >= 0; i--) {
-							if (entries[i].startTime < onloadTiming && (!maxEntry || maxEntry.duration < entries[i].duration)) {
-								maxEntry = entries[i];
-							}
-						}
-						if(maxEntry)
-						{
-							codeTrack("__name.onloadSlowest", "__name.onload", {__param: 1, group: maxEntry.name.replace(/([^\?])\?[^\?].+$/, "$1").replace(/\W+/g, '_').substr(-32)});
+			setTimeout(function () {
+				codeTrack("__name.domready", "__datum" , {__param:1,autoGroup: 'time'});
+			}, 0)
+		});
+		(function (callback) {
+			if (/^(loaded|complete)$/.test(document.readyState)) {
+				return callback();
+			}
+			if (window.addEventListener) {
+				return window.addEventListener('load', callback, false);
+			}
+			if (window.attachEvent) {
+				return window.attachEvent('onload', callback);
+			}
+		})(function () {
+			setTimeout(function () {
+				codeTrack("__name.onload", "__datum", {__param: 1, autoGroup: 'time'});//__comment
+				var performance = window.performance;
+				if (performance) {
+					var entries = performance.getEntries(),
+						onloadTiming = performance.timing.loadEventEnd - performance.timing.navigationStart,
+						maxEntry = null;
+					for (var i = entries.length - 1; i >= 0; i--) {
+						if (entries[i].startTime < onloadTiming && (!maxEntry || maxEntry.duration < entries[i].duration)) {
+							maxEntry = entries[i];
 						}
 					}
-					var usedJSHeapSize = window.performance && performance.memory && performance.memory.usedJSHeapSize;
-					if (usedJSHeapSize) {
-						codeTrack("__name.onloadMemory", "__name.onload", {__param: 1,group: (usedJSHeapSize <= 0 ? 0 : Math.floor(Math.log(usedJSHeapSize) / Math.log(2)))})
+					if (maxEntry) {
+						codeTrack("__name.onloadSlowest", "__name.onload", {__param: 1, group: maxEntry.name.replace(/([^\?])\?[^\?].+$/, "$1").replace(/\W+/g, '_').substr(-32)});
 					}
-				}, 0)
-			});
+				}
+				var usedJSHeapSize = window.performance && performance.memory && performance.memory.usedJSHeapSize;
+				if (usedJSHeapSize) {
+					codeTrack("__name.onloadMemory", "__name.onload", {__param: 1, group: (usedJSHeapSize <= 0 ? 0 : Math.floor(Math.log(usedJSHeapSize) / Math.log(2)))})
+				}
+			}, 0)
 		});
 	}).toString()
 		.replace(/__name/g, params[1].replace(/:/g,"."))

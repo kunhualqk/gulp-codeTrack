@@ -153,7 +153,7 @@ module.exports = function (option) {
 								map = {},
 								num = 0,
 								value,
-								pvLev = Math.round(Math.log((option.sampleNumDaily || 8192) / (option.defaultSamplingRatio || (1 / 128))) / Math.log(2));
+								pvLev = Math.round(-Math.log(option.defaultSamplingRatio || (1 / 128)) / Math.log(2));
 							if (!params) {
 								cfg && cfg.onError && cfg.onError(param);
 								return s;

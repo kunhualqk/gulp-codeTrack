@@ -40,7 +40,7 @@ module.exports = function (params, comment) {
 			setTimeout(function () {
 				codeTrack("__name.onload", "__datum", {__param: 1, autoGroup: 'time'});//__comment
 				var performance = window.performance;
-				if (performance) {
+				if (performance && performance.getEntries) {
 					var entries = performance.getEntries(),
 						onloadTiming = performance.timing.loadEventEnd - performance.timing.navigationStart,
 						maxEntry = null;
